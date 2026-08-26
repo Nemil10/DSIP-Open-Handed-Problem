@@ -1,0 +1,158 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --------------------------------------------------
+# Load the 5 images already present in Colab
+# --------------------------------------------------
+
+image_paths = [
+    '/content/image1.png',
+    '/content/image2.png',
+    '/content/image3.png',
+    '/content/image4.png',
+    '/content/image5.png'
+]
+
+images = []
+
+for path in image_paths:
+    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+
+    if img is None:
+        print("Image not found:", path)
+    else:
+        images.append(img)
+
+print("Number of images loaded:", len(images))
+
+
+# --------------------------------------------------
+# Histogram Equalization
+# --------------------------------------------------
+
+equalized_images = []
+
+for img in images:
+    equalized = cv2.equalizeHist(img)
+    equalized_images.append(equalized)
+
+
+# --------------------------------------------------
+# Histogram Matching Function
+# --------------------------------------------------
+
+def histogram_matching(source, reference):
+
+    # Calculate histogram of source
+    source_hist = cv2.calcHist(
+        [source], [0], None, [256], [0, 256]
+    ).flatten()
+
+    # Calculate histogram of reference
+    reference_hist = cv2.calcHist(
+        [reference], [0], None, [256], [0, 256]
+    ).flatten()
+
+    # Convert histogram to probability
+    source_hist = source_hist / source_hist.sum()
+    reference_hist = reference_hist / reference_hist.sum()
+
+    # Calculate CDF
+    source_cdf = np.cumsum(source_hist)
+    reference_cdf = np.cumsum(reference_hist)
+
+    # Create mapping
+    mapping = np.zeros(256, dtype=np.uint8)
+
+    for i in range(256):
+        mapping[i] = np.argmin(
+            np.abs(reference_cdf - source_cdf[i])
+        )
+
+    # Apply mapping
+    matched = mapping[source]
+
+    return matched
+
+
+# --------------------------------------------------
+# Histogram Matching
+# image1 is used as reference image
+# --------------------------------------------------
+
+reference_image = images[0]
+
+matched_images = []
+
+for img in images:
+    matched = histogram_matching(img, reference_image)
+    matched_images.append(matched)
+
+
+# --------------------------------------------------
+# Display Results
+# --------------------------------------------------
+
+for i in range(len(images)):
+
+    plt.figure(figsize=(15, 8))
+
+    # Original
+    plt.subplot(2, 3, 1)
+    plt.imshow(images[i], cmap='gray')
+    plt.title("Original Image")
+    plt.axis('off')
+
+    # Histogram Equalization
+    plt.subplot(2, 3, 2)
+    plt.imshow(equalized_images[i], cmap='gray')
+    plt.title("Histogram Equalization")
+    plt.axis('off')
+
+    # Histogram Matching
+    plt.subplot(2, 3, 3)
+    plt.imshow(matched_images[i], cmap='gray')
+    plt.title("Histogram Matching")
+    plt.axis('off')
+
+    # Original Histogram
+    plt.subplot(2, 3, 4)
+    plt.hist(
+        images[i].ravel(),
+        bins=256,
+        range=(0, 256)
+    )
+    plt.title("Original Histogram")
+    plt.xlabel("Intensity")
+    plt.ylabel("Frequency")
+
+    # Equalized Histogram
+    plt.subplot(2, 3, 5)
+    plt.hist(
+        equalized_images[i].ravel(),
+        bins=256,
+        range=(0, 256)
+    )
+    plt.title("Equalized Histogram")
+    plt.xlabel("Intensity")
+    plt.ylabel("Frequency")
+
+    # Matched Histogram
+    plt.subplot(2, 3, 6)
+    plt.hist(
+        matched_images[i].ravel(),
+        bins=256,
+        range=(0, 256)
+    )
+    plt.title("Matched Histogram")
+    plt.xlabel("Intensity")
+    plt.ylabel("Frequency")
+
+    plt.suptitle(
+        "Image " + str(i + 1) + " - Comparison",
+        fontsize=16
+    )
+
+    plt.tight_layout()
+    plt.show()
