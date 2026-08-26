@@ -1,0 +1,117 @@
+import numpy as np 
+import librosa 
+import matplotlib.pyplot as plt 
+from scipy.signal import correlate 
+import os 
+original_file = r"C:\Users\Nemilchhagani\SEM 5\DSIP\open 3\Sanam Re Arijit Singh 128 Kbps.mp3" 
+karaoke_file = r"C:\Users\Nemilchhagani\SEM 5\DSIP\open 3\Sanam Re - Karaoke - Arijit Singh.MP3" 
+different_file = r"C:\Users\Nemilchhagani\SEM 5\DSIP\open 3\Tum Hi Ho Aashiqui 2 128 Kbps.mp3" 
+for file in [original_file, karaoke_file, different_file]: 
+if not os.path.exists(file): 
+print("File not found:", file) 
+exit() 
+sr = 22050 
+original, _ = librosa.load(original_file, sr=sr, mono=True) 
+karaoke, _ = librosa.load(karaoke_file, sr=sr, mono=True) 
+different, _ = librosa.load(different_file, sr=sr, mono=True) 
+length = min(len(original), len(karaoke), len(different)) 
+original = original[:length] 
+karaoke = karaoke[:length] 
+different = different[:length] 
+original = original / np.max(np.abs(original)) 
+karaoke = karaoke / np.max(np.abs(karaoke)) 
+different = different / np.max(np.abs(different)) 
+def normalized_correlation(x, y): 
+corr = correlate(x, y, mode="same") 
+value = np.max(np.abs(corr)) / (np.linalg.norm(x) * np.linalg.norm(y)) 
+return corr, value 
+corr1, val1 = normalized_correlation(original, karaoke) 
+corr2, val2 = normalized_correlation(original, different) 
+corr3, val3 = normalized_correlation(karaoke, different) 
+auto_original = correlate(original, original, mode="same") 
+auto_karaoke = correlate(karaoke, karaoke, mode="same") 
+auto_different = correlate(different, different, mode="same") 
+plt.figure(figsize=(12,8)) 
+plt.subplot(3,1,1) 
+plt.plot(original) 
+plt.title("Original Song - Sanam Re") 
+plt.xlabel("Samples") 
+plt.ylabel("Amplitude") 
+plt.subplot(3,1,2) 
+plt.plot(karaoke) 
+plt.title("Karaoke Song -  Sanam Re") 
+plt.xlabel("Samples") 
+plt.ylabel("Amplitude") 
+plt.subplot(3,1,3) 
+plt.plot(different) 
+plt.title("Different Song - Tum Hi Ho Aashiqui") 
+plt.xlabel("Samples") 
+plt.ylabel("Amplitude") 
+plt.tight_layout() 
+plt.show() 
+plt.figure(figsize=(12,8)) 
+plt.subplot(3,1,1) 
+plt.plot(auto_original) 
+plt.title("Autocorrelation - Original Song") 
+plt.xlabel("Lag") 
+plt.ylabel("Correlation") 
+plt.subplot(3,1,2) 
+plt.plot(auto_karaoke) 
+plt.title("Autocorrelation - Karaoke Song") 
+plt.xlabel("Lag") 
+plt.ylabel("Correlation") 
+plt.subplot(3,1,3) 
+plt.plot(auto_different) 
+plt.title("Autocorrelation - Different Song") 
+plt.xlabel("Lag") 
+plt.ylabel("Correlation") 
+plt.tight_layout() 
+plt.show() 
+plt.figure(figsize=(12,8)) 
+plt.subplot(3,1,1) 
+plt.plot(corr1) 
+plt.title("Cross Correlation - Original vs Karaoke") 
+plt.xlabel("Lag") 
+plt.ylabel("Correlation") 
+plt.subplot(3,1,2) 
+plt.plot(corr2) 
+plt.title("Cross Correlation - Original vs Different") 
+plt.xlabel("Lag") 
+plt.ylabel("Correlation") 
+plt.subplot(3,1,3) 
+plt.plot(corr3) 
+plt.title("Cross Correlation - Karaoke vs Different") 
+plt.xlabel("Lag") 
+plt.ylabel("Correlation") 
+plt.tight_layout() 
+plt.show() 
+pairs = [ 
+"Original\nvs\nKaraoke", 
+"Original\nvs\nDifferent", 
+"Karaoke\nvs\nDifferent" 
+] 
+values = [val1, val2, val3] 
+plt.figure(figsize=(7,5)) 
+plt.bar(pairs, values) 
+plt.title("Normalized Correlation Comparison") 
+plt.ylabel("Correlation Value") 
+plt.ylim(0,1) 
+plt.grid(axis="y") 
+plt.show() 
+print("\n==============================") 
+print("Normalized Correlation Values") 
+print("==============================") 
+print(f"Original vs Karaoke   : {val1:.4f}") 
+print(f"Original vs Different : {val2:.4f}") 
+print(f"Karaoke vs Different  : {val3:.4f}") 
+print("\nInterpretation") 
+if val1 > val2 and val1 > val3: 
+print("- Original and Karaoke have the highest similarity.") 
+print("- This is expected because both are from the same song.") 
+else: 
+print("- Please verify the selected audio files.") 
+print("\nCorrelation Scale") 
+print("0.90 - 1.00 : Very High Similarity") 
+print("0.70 - 0.89 : High Similarity") 
+print("0.40 - 0.69 : Moderate Similarity") 
+print("0.00 - 0.39 : Low Similarity")
